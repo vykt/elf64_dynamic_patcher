@@ -10,21 +10,24 @@ resolving function headers using the necessary-for-execution sections, then chan
 
 ### EXPLANATION:
 
-```$ man 5 elf```
 
--.plt section holds stubs of dynamically linked functions. Code from .text will jump 
- here when calling these dynamic procedures.
+```
+$ man 5 elf
+```
 
--.rela.plt connects .plt with .dynsym section. This section is important as it is 
- necessary for execution of the program unlike .symtab, which can be freely stripped. 
- The 'info' entry of .rela.plt contains an index into the .dynsym segment.
+- .plt section holds stubs of dynamically linked functions. Code from .text will jump 
+  here when calling these dynamic procedures.
 
--.dynsym contains symbols for dynamic linking. More importantly, the headers of this 
- section contain an index into the corresponding string table, .dynstr. This means 
- functions references in .plt can now be given a name.
+- .rela.plt connects .plt with .dynsym section. This section is important as it is 
+  necessary for execution of the program unlike .symtab, which can be freely stripped. 
+  The 'info' entry of .rela.plt contains an index into the .dynsym segment.
 
--.dynstr is the string table for the symbols found in the dynsym section. Unlike that 
- section, .dynstr stores the string representations of the symbols.
+- .dynsym contains symbols for dynamic linking. More importantly, the headers of this 
+  section contain an index into the corresponding string table, .dynstr. This means 
+  functions references in .plt can now be given a name.
+
+- .dynstr is the string table for the symbols found in the dynsym section. Unlike that 
+  section, .dynstr stores the string representations of the symbols.
 
 Putting it all together, by following the chain of sections desctibed above, it is 
 possible to find the string representation of every called function (e.g.: 'free()') 
