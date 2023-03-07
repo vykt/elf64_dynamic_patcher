@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <unistd.h>
 #include <elf.h>
 
+#include "patch.h"
 #include "setup.h"
 #include "vector.h"
 
@@ -22,6 +24,7 @@ void check_magic_bytes(Elf64_Ehdr * elf_header) {
 
 }
 
+
 //read target headers into struct
 void read_elf_header(Elf64_Ehdr * elf_header, FILE * target_file) {
 
@@ -35,6 +38,33 @@ void read_elf_header(Elf64_Ehdr * elf_header, FILE * target_file) {
 }
 
 
+//build sub table
+void build_sub_table(int argc, char ** argv, repl_t * sub_table, vector_t func_vector) {
+
+	int ret;
+	int match = 0;
+	libc_func_t temp_func;
+
+	for (int i = 0; i < func_vector.length; ++i) {
+
+		ret = vector_get(&func_vector, i, (char *) &temp_func);
+		if (!(strcmp(argv[2], temp_func.name))) {
+			sub_table->offset_old = temp_func.offset;
+			++match;
+		}
+		if (!(strcmp(argv[3], temp_func.name))) {
+			sub_table->offset_new = temp_func.offset;
+			++match;
+		}
+	}
+	if (match != 2) {
+		puts("Input: unable to find matching old and/or new function symbols");
+		exit(1);
+	}
+}
+
+
+//le main
 int main(int argc, char ** argv) {
 
 	int ret;
@@ -42,11 +72,11 @@ int main(int argc, char ** argv) {
 	Elf64_Ehdr elf_header;
 
 	vector_t func_vector;
-	char replace_table[FUNC_REPL_NUM][FUNC_NAME_MAX] = {};
+	repl_t sub_table;	
 
 	//check arguments
-	if (argc < 2) {
-		printf("usage: %s <file>\n", argv[0]);
+	if (argc < 4) {
+		printf("usage: %s <file> <old_func> <new_func>\n", argv[0]);
 		return 1;
 	}
 
@@ -66,8 +96,15 @@ int main(int argc, char ** argv) {
 	//check headers
 	check_magic_bytes(&elf_header);
 
-	//TODO test
+	//get function vector, with names and offsets
 	get_func_vector(&elf_header, target_file, &func_vector);
+	
+
+	//build the substitution table
+	build_sub_table(argc, argv, &sub_table, func_vector);
+
+	printf("old: 0x%lx, new: 0x%lx\n", sub_table.offset_old, sub_table.offset_new);
 
 	fclose(target_file);
+
 }

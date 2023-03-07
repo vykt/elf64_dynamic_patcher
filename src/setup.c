@@ -8,6 +8,15 @@
 #include "setup.h"
 #include "vector.h"
 
+
+/*
+ *	TODO: maybe check fread() for error by making a wrapper function. It's a pain.
+ *
+ */
+
+
+//functions internal to this file return a value, just in case its useful in the future
+
 //read arbitrary section
 size_t read_section_header(Elf64_Shdr * section_header, FILE * target_file) {
 
@@ -53,10 +62,10 @@ size_t read_shstrtab_header(Elf64_Ehdr * elf_header, Elf64_Shdr * shstrtab_heade
 }
 
 
+//fill in func vector using fetched headers
 size_t populate_func_vector(Elf64_Shdr * plt_header, Elf64_Shdr * relaplt_header, Elf64_Shdr * dynsym_header, Elf64_Shdr * dynstr_header, vector_t * func_vector, FILE * target_file) {
 
 	size_t ret;
-	int vector_ret;
 	uint32_t temp_info;
 	char * string_buffer;
 	
@@ -88,11 +97,7 @@ size_t populate_func_vector(Elf64_Shdr * plt_header, Elf64_Shdr * relaplt_header
 		strncpy(temp_func.name, string_buffer, FUNC_NAME_MAX);
 		temp_func.offset = plt_header->sh_offset + 0x10*(i+1);
 
-		vector_ret = vector_add(func_vector, 0, (char *) &temp_func, VECTOR_APPEND_TRUE);
-		if (vector_ret) {
-			printf("vector error, return code: %d\n", vector_ret);
-		}
-	
+		vector_add(func_vector, 0, (char *) &temp_func, VECTOR_APPEND_TRUE);
 	}
 
 	free(string_buffer);
@@ -109,20 +114,21 @@ void get_func_vector(Elf64_Ehdr * elf_header, FILE * target_file, vector_t * fun
 
 	Elf64_Shdr temp_header;
 
-	Elf64_Shdr shstrtab_header;
-	Elf64_Shdr dynsym_header;
-	Elf64_Shdr dynstr_header;
-	Elf64_Shdr strtab_header;
-	Elf64_Shdr plt_header;
-	Elf64_Shdr relaplt_header;
+	//The sum of any of the following numbers make it clear which headers are missing.
+	Elf64_Shdr shstrtab_header; //1
+	Elf64_Shdr dynsym_header;   //2
+	Elf64_Shdr dynstr_header;   //4
+	Elf64_Shdr plt_header;      //8
+	Elf64_Shdr relaplt_header;  //16
 
 	Elf64_Sym symbol;
 
 
-	string_buffer = malloc(FUNC_NAME_MAX); //TODO remember to free
+	string_buffer = malloc(FUNC_NAME_MAX);
 
 	//first get section string table
 	if (read_shstrtab_header(elf_header, &shstrtab_header, target_file)) exit(1);
+	section_count += 1;
 
 
 	//now fill every other section header
@@ -145,6 +151,7 @@ void get_func_vector(Elf64_Ehdr * elf_header, FILE * target_file, vector_t * fun
 			//match found for .plt
 			if (!strncmp(string_buffer, ".plt", 5)) {
 				memcpy(&plt_header, &temp_header, sizeof(Elf64_Shdr));
+				section_count += 8;
 			}
 
 		//potential .rela.plt
@@ -156,32 +163,28 @@ void get_func_vector(Elf64_Ehdr * elf_header, FILE * target_file, vector_t * fun
 			//match found for .rela.plt
 			if(!strncmp(string_buffer, ".rela.plt", 10)) {
 				memcpy(&relaplt_header, &temp_header, sizeof(Elf64_Shdr));
+				section_count += 16;
 			}
 
 		//if dynsym found
 		} else if (temp_header.sh_type == SHT_DYNSYM) {
 			memcpy(&dynsym_header, &temp_header, sizeof(Elf64_Shdr));
+			section_count += 2;
 
 			//get dynstr
 			fseek(target_file, elf_header->e_shoff + dynsym_header.sh_link*sizeof(Elf64_Shdr), SEEK_SET);
 			ret = fread(&dynstr_header, sizeof(Elf64_Shdr), 1, target_file);
+			section_count += 4;
 		}
 
 	} //end for
 
-
-	ret = populate_func_vector(&plt_header, &relaplt_header, &dynsym_header, &dynstr_header, func_vector, target_file);
-
-
-	//TODO test
-	
-	libc_func_t test;
-	for (int i = 0; i < func_vector->length; ++i) {
-		vector_get(func_vector, i, (char *) &test);
-		printf("0x%lx - %s\n", test.offset, test.name);
+	//TODO check can be expanded to state which sections are missing
+	//check that all necessary sections have been found
+	if (section_count != 31) {
+		puts("ELF error: unable to find all necessary sections");
 	}
-
-	//TODO end test
+	ret = populate_func_vector(&plt_header, &relaplt_header, &dynsym_header, &dynstr_header, func_vector, target_file);
 
 	free(string_buffer);
 }
