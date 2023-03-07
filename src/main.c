@@ -5,6 +5,7 @@
 #include <elf.h>
 
 #include "setup.h"
+#include "vector.h"
 
 
 //check whether target is a valid ELF
@@ -36,10 +37,11 @@ void read_elf_header(Elf64_Ehdr * elf_header, FILE * target_file) {
 
 int main(int argc, char ** argv) {
 
+	int ret;
 	FILE * target_file;
 	Elf64_Ehdr elf_header;
 
-	libc_func * func_table; //gets allocated by get_func_table
+	vector_t func_vector;
 	char replace_table[FUNC_REPL_NUM][FUNC_NAME_MAX] = {};
 
 	//check arguments
@@ -55,6 +57,9 @@ int main(int argc, char ** argv) {
 		return 1;
 	}
 
+	//init vector
+	ret = vector_ini(&func_vector, sizeof(libc_func_t));
+
 	//get headers
 	read_elf_header(&elf_header, target_file);
 
@@ -62,7 +67,7 @@ int main(int argc, char ** argv) {
 	check_magic_bytes(&elf_header);
 
 	//TODO test
-	get_func_table(&elf_header, target_file, func_table, replace_table);
+	get_func_vector(&elf_header, target_file, &func_vector);
 
 	fclose(target_file);
 }

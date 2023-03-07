@@ -1,9 +1,10 @@
-#ifndef setup_h
-#define setup_h
+#ifndef SETUP_H
+#define SETUP_H
 
 #include <stdio.h>
 #include <elf.h>
 
+#include "vector.h"
 
 #define FUNC_REPL_NUM 2
 #define FUNC_NAME_MAX 1024
@@ -17,9 +18,9 @@ typedef struct {
 	char name[FUNC_NAME_MAX];
 	uint64_t offset;
 
-} libc_func;
+} libc_func_t;
 
 
-void get_func_table(Elf64_Ehdr * elf_header, FILE * target_elf, libc_func * func_table, char replace_table[FUNC_REPL_NUM][FUNC_NAME_MAX]);
+void get_func_vector(Elf64_Ehdr * elf_header, FILE * target_elf, vector_t * func_vector);
 
 #endif
