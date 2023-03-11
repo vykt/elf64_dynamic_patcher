@@ -31,7 +31,7 @@ Run the target before the patch:
 $ ./target
 ```
 
-Patch the target: (format: elf_patcher [elf] [old_func] [new_func])
+Patch the target:
 ```
 $ ./elf_patcher target free puts
 ```
