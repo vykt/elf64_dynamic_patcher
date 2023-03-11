@@ -61,6 +61,8 @@ void build_sub_table(int argc, char ** argv, repl_t * sub_table, vector_t func_v
 		puts("Input: unable to find matching old and/or new function symbols");
 		exit(1);
 	}
+
+	sub_table->diff = sub_table->offset_new - sub_table->offset_old;
 }
 
 
@@ -70,6 +72,7 @@ int main(int argc, char ** argv) {
 	int ret;
 	FILE * target_file;
 	Elf64_Ehdr elf_header;
+	Elf64_Shdr text_header;
 
 	vector_t func_vector;
 	repl_t sub_table;	
@@ -97,13 +100,14 @@ int main(int argc, char ** argv) {
 	check_magic_bytes(&elf_header);
 
 	//get function vector, with names and offsets
-	get_func_vector(&elf_header, target_file, &func_vector);
+	get_func_vector(&elf_header, &text_header, target_file, &func_vector);
 	
-
 	//build the substitution table
 	build_sub_table(argc, argv, &sub_table, func_vector);
 
-	printf("old: 0x%lx, new: 0x%lx\n", sub_table.offset_old, sub_table.offset_new);
+	//patch file
+	patch_elf(func_vector, sub_table, elf_header, text_header, target_file);
+
 
 	fclose(target_file);
 

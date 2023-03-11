@@ -5,14 +5,14 @@
 
 int main() {
 
-	char * uwu = "hello";
-	char * uwu2 = "goodbye";
+	char * uwu = "Lain said:";
+	char * uwu2 = "to the ELFes.";
 	
 	char * x = malloc(50);
 	strcpy(x, uwu);
 	free(x);
 
-	puts("regular puts owo\n");
+	puts("\"nothing to see here...\"");
 
 	char * y = malloc(50);
 	strcpy(y, uwu2);

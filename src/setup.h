@@ -23,12 +23,13 @@ typedef struct {
 
 typedef struct {
 
-	uint64_t offset_old;
-	uint64_t offset_new;
+	off_t offset_old;
+	off_t offset_new;
+	int32_t diff;
 
 } repl_t;
 
 
-void get_func_vector(Elf64_Ehdr * elf_header, FILE * target_elf, vector_t * func_vector);
+void get_func_vector(Elf64_Ehdr * elf_header, Elf64_Shdr * text_header, FILE * target_elf, vector_t * func_vector);
 
 #endif

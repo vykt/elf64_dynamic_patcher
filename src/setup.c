@@ -106,7 +106,7 @@ size_t populate_func_vector(Elf64_Shdr * plt_header, Elf64_Shdr * relaplt_header
 
 
 //read dynsym section header
-void get_func_vector(Elf64_Ehdr * elf_header, FILE * target_file, vector_t * func_vector) {
+void get_func_vector(Elf64_Ehdr * elf_header, Elf64_Shdr * text_header, FILE * target_file, vector_t * func_vector) {
 
 	size_t ret;
 	char * string_buffer;
@@ -154,6 +154,12 @@ void get_func_vector(Elf64_Ehdr * elf_header, FILE * target_file, vector_t * fun
 				section_count += 8;
 			}
 
+			//match found for .text
+			if (!strncmp(string_buffer, ".text", 6)) {
+				memcpy(text_header, &temp_header, sizeof(Elf64_Shdr));
+				section_count += 16;
+			}
+
 		//potential .rela.plt
 		} else if (temp_header.sh_type == SHT_RELA) {
 
@@ -163,7 +169,7 @@ void get_func_vector(Elf64_Ehdr * elf_header, FILE * target_file, vector_t * fun
 			//match found for .rela.plt
 			if(!strncmp(string_buffer, ".rela.plt", 10)) {
 				memcpy(&relaplt_header, &temp_header, sizeof(Elf64_Shdr));
-				section_count += 16;
+				section_count += 32;
 			}
 
 		//if dynsym found
@@ -181,7 +187,7 @@ void get_func_vector(Elf64_Ehdr * elf_header, FILE * target_file, vector_t * fun
 
 	//TODO check can be expanded to state which sections are missing
 	//check that all necessary sections have been found
-	if (section_count != 31) {
+	if (section_count != 63) {
 		puts("ELF error: unable to find all necessary sections");
 	}
 	ret = populate_func_vector(&plt_header, &relaplt_header, &dynsym_header, &dynstr_header, func_vector, target_file);
