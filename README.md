@@ -8,8 +8,41 @@ resolving function headers using the necessary-for-execution sections, then chan
 32-bit relative offsets for call instructions. Works on stripped executables.
 
 
-### EXPLANATION:
+### WORKED EXAMPLE:
 
+Lets say you'd like to replace every call to 'free()' with a call to 'puts()'. This 
+is convenient as each function takes the same parameters, and the value of the buffer 
+can oftentimes be interpreted as a string. For convenience, lets say puts() is already 
+linked to the executable.
+
+The 'target' file that comes with this repo is designed specifically for the above 
+scenario. It allocates 2 entries in the heap and places strings in each. If target is 
+executed regularly, it won't print these strings out. Apply the patch however and 
+these strings will be printed to the screen.
+
+Build the patcher & target:
+```
+$ cd elf64_dynamic_patcher/src
+$ make && make target
+```
+
+Run the target before the patch:
+```
+$ ./target
+```
+
+Patch the target: (format: elf_patcher [elf] [old_func] [new_func])
+```
+$ ./elf_patcher target free puts
+```
+
+Run the target again:
+```
+$ ./target
+```
+
+
+### EXPLANATION:
 
 ```
 $ man 5 elf
@@ -29,8 +62,8 @@ $ man 5 elf
 - .dynstr is the string table for the symbols found in the dynsym section. Unlike that 
   section, .dynstr stores the string representations of the symbols.
 
-Putting it all together, by following the chain of sections desctibed above, it is 
-possible to find the string representation of every called function (e.g.: 'free()') 
+Putting it all together, by following the chain of sections described above, it is 
+possible to find the string representation of every called function (e.g.: free() ) 
 from .dynstr''', and find its offset in the file from .plt. 
 
 The 'call' instruction appears as '0xe8' in hex, followed by a 4 byte (uint32_t) 
@@ -44,7 +77,7 @@ the function that is being 'called' is now known.
 
 It is now possible to alter the offset to call a different function of one's choice. 
 This patcher is programmed to find every instance of a call to 'free()' and to replace 
-it with a call to 'puts()'. This works well as both functions take identical parameters.
+it with a call to puts(). This works well as both functions take identical parameters.
 
 Patching functions with different parameters automatically (rather than by hand with 
 something like radare2) is beyond the scope of this program, or the time I have :p
