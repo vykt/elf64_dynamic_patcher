@@ -23,8 +23,9 @@ $ make && make target
 
 ### RUN:
 
-This repo comes with an example that changes the call to free() to a call to puts().
-Feel free to experiment with the code and create your own executables to patch.
+This repo comes with an example that changes the call to <i>free()</i> to a call 
+to <i>puts()</i>. Feel free to experiment with the code and create your own executables 
+to patch.
 
 First, run the target before the patch:
 ```
